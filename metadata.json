@@ -1,0 +1,8 @@
+{
+  "name": "Jarvis",
+  "description": "Voice-first AI assistant, holographic HUD, optical solver, polyglot translator, and autonomous multi-task agent ported to native Android with Jetpack Compose.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
