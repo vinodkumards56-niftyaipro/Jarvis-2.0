@@ -141,6 +141,19 @@ jobs:
                   1,
               )
 
+          # Keep the settings test interactions inside the test viewport.
+          # Fixed-duration pumps avoid infinite animations but do not scroll controls into view.
+          second = second.replace(
+              "await tester.tap(find.text('Send system prompt'));",
+              "await tester.ensureVisible(find.text('Send system prompt'));\\n  await tester.pump();\\n  await tester.tap(find.text('Send system prompt'));",
+              1,
+          )
+          second = second.replace(
+              "await tester.tap(find.text('Save changes'));",
+              "await tester.ensureVisible(find.text('Save changes'));\\n  await tester.pump();\\n  await tester.tap(find.text('Save changes'));",
+              1,
+          )
+
           source = source[:first_start] + first + second + source[group_start:]
           path.write_text(source)
           print("Applied bounded frame pumping to the two timing-out widget tests; assertions and test coverage remain unchanged.")
