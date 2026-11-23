@@ -68,7 +68,7 @@ jobs:
           if "package:flutter/services.dart" not in source:
               source = source.replace(
                   "import 'package:flutter/material.dart';",
-                  "import 'dart:io';\\n\\nimport 'package:flutter/material.dart';\\nimport 'package:flutter/services.dart';",
+                  "import 'dart:io';\n\nimport 'package:flutter/material.dart';\nimport 'package:flutter/services.dart';",
                   1,
               )
           if "setUpAll(() {" not in source:
