@@ -195,6 +195,66 @@ jobs:
               raise SystemExit("Expected exactly one share_plus ^13.3.0 constraint")
           p.write_text(s)
           print("Pinned share_plus to ^12.0.2 to resolve win32 constraint conflict with flutter_secure_storage ^9.2.4")
+
+          # The selected Flutter stable release (3.50.1) requires Gradle >= 9.3.1.
+          wrapper = Path("android/gradle/wrapper/gradle-wrapper.properties")
+          w = wrapper.read_text()
+          w, count = re.subn(
+              r'(?m)^(distributionUrl=.*gradle-)9\\.1\\.0(-all\\.zip)
+
+      - name: Install Flutter dependencies
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        run: flutter pub get
+
+      - name: Check Flutter project
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        run: flutter doctor -v
+
+      - name: Analyze Flutter project
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run Flutter tests
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        run: flutter test
+
+      - name: Build release APK
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        run: flutter build apk --release --verbose
+
+      - name: Verify APK
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        run: |
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          test -f "$APK"
+          ls -lh "$APK"
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-Android-APK
+          path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
+      - name: Upload build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-Build-Diagnostics
+          path: |
+            ${{ env.PROJECT_DIR }}/build/
+            ${{ env.PROJECT_DIR }}/android/
+          retention-days: 7
+          if-no-files-found: ignore
+,
+              r'\\g<1>9.3.1\\g<2>',
+              w,
+          )
+          if count != 1:
+              raise SystemExit("Expected exactly one Gradle 9.1.0 wrapper distribution URL")
+          wrapper.write_text(w)
+          print("Updated CI workspace Gradle wrapper to 9.3.1 for Flutter 3.50.1")
           PY
 
       - name: Install Flutter dependencies
