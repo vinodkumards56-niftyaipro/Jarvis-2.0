@@ -222,6 +222,19 @@ jobs:
           g = g.replace(old_plugin, new_plugin, 1)
           settings.write_text(g)
           print("Updated CI Android Gradle Plugin to 9.1.1 for Flutter 3.50.1")
+
+          # LiteRT-LM 0.18.0 returns a Message; its text content is exposed
+          # through Message.toString(), not a .text property.
+          engine_file = Path("android/app/src/main/kotlin/com/privateagent/private_agent/LocalLlmEngine.kt")
+          if not engine_file.exists():
+              raise SystemExit("Expected LocalLlmEngine.kt in the selected source package")
+          kotlin = engine_file.read_text()
+          old_call = "activeConversation.sendMessage(prompt).text"
+          new_call = "activeConversation.sendMessage(prompt).toString()"
+          if kotlin.count(old_call) != 1:
+              raise SystemExit("Expected exactly one LiteRT-LM sendMessage(...).text call")
+          engine_file.write_text(kotlin.replace(old_call, new_call, 1))
+          print("Updated LiteRT-LM response extraction to Message.toString() in CI workspace")
           PY
 
       - name: Install Flutter dependencies
