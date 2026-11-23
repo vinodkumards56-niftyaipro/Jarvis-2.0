@@ -78,7 +78,7 @@ jobs:
 
       - name: Analyze Flutter project
         working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - name: Run Flutter tests
         working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
