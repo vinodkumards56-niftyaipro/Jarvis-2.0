@@ -215,60 +215,11 @@ jobs:
           if not settings.exists():
               raise SystemExit("Expected android/settings.gradle.kts in the selected source package")
           g = settings.read_text()
-          g, count = re.subn(
-              r'(?m)^(\\s*id\\("com\\.android\\.application"\\) version ")9\\.0\\.1(" apply false\\s*)
-
-      - name: Install Flutter dependencies
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
-        run: flutter pub get
-
-      - name: Check Flutter project
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
-        run: flutter doctor -v
-
-      - name: Analyze Flutter project
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
-
-      - name: Run Flutter tests
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
-        run: flutter test
-
-      - name: Build release APK
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
-        run: flutter build apk --release --verbose
-
-      - name: Verify APK
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
-        run: |
-          APK="build/app/outputs/flutter-apk/app-release.apk"
-          test -f "$APK"
-          ls -lh "$APK"
-
-      - name: Upload APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: JARVIS-Android-APK
-          path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 14
-
-      - name: Upload build diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: JARVIS-Build-Diagnostics
-          path: |
-            ${{ env.PROJECT_DIR }}/build/
-            ${{ env.PROJECT_DIR }}/android/
-          retention-days: 7
-          if-no-files-found: ignore
-,
-              r'\\g<1>9.1.1\\g<2>',
-              g,
-          )
-          if count != 1:
+          old_plugin = 'id("com.android.application") version "9.0.1" apply false'
+          new_plugin = 'id("com.android.application") version "9.1.1" apply false'
+          if g.count(old_plugin) != 1:
               raise SystemExit("Expected exactly one Android Gradle Plugin 9.0.1 declaration")
+          g = g.replace(old_plugin, new_plugin, 1)
           settings.write_text(g)
           print("Updated CI Android Gradle Plugin to 9.1.1 for Flutter 3.50.1")
           PY
