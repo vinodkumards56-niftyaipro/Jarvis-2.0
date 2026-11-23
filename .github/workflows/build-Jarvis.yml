@@ -78,17 +78,39 @@ jobs:
                   1,
               )
           if "setUpAll(() {" not in source:
-              setup = """  setUpAll(() {
+              setup = """  final secureValues = <String, String>{};
+
+          setUp(() {
+            secureValues.clear();
+          });
+
+          setUpAll(() {
             const secureStorage = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
             TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
                 .setMockMethodCallHandler(secureStorage, (call) async {
+              final args = call.arguments is Map
+                  ? Map<String, dynamic>.from(call.arguments as Map)
+                  : <String, dynamic>{};
+              final key = args['key'] as String?;
               switch (call.method) {
                 case 'read':
-                  return null;
+                  return key == null ? null : secureValues[key];
                 case 'readAll':
-                  return <String, String>{};
+                  return Map<String, String>.from(secureValues);
                 case 'containsKey':
-                  return false;
+                  return key != null && secureValues.containsKey(key);
+                case 'write':
+                  final value = args['value'] as String?;
+                  if (key != null && value != null) {
+                    secureValues[key] = value;
+                  }
+                  return null;
+                case 'delete':
+                  if (key != null) secureValues.remove(key);
+                  return null;
+                case 'deleteAll':
+                  secureValues.clear();
+                  return null;
                 default:
                   return null;
               }
