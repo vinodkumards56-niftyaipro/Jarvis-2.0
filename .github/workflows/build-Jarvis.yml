@@ -182,25 +182,34 @@ jobs:
           PY
 
       - name: Resolve compatible Flutter dependency constraints
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        working-directory: \${{ github.workspace }}/\${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
+
           p = Path("pubspec.yaml")
           s = p.read_text()
           s, count = re.subn(r'(?m)^(\s*share_plus:\s*)\^13\.3\.0\s*$', r'\g<1>^12.0.2', s)
           if count != 1:
               raise SystemExit("Expected exactly one share_plus ^13.3.0 constraint")
           p.write_text(s)
-          print("Pinned share_plus to ^12.0.2 to resolve win32 constraint conflict with flutter_secure_storage ^9.2.4")
+          print("Pinned share_plus to ^12.0.2 for flutter_secure_storage compatibility")
 
-          # The selected Flutter stable release (3.50.1) requires Gradle >= 9.3.1.
+          # Flutter 3.50.1 requires Gradle 9.3.1 or newer.
           wrapper = Path("android/gradle/wrapper/gradle-wrapper.properties")
           w = wrapper.read_text()
           w, count = re.subn(
-              r'(?m)^(distributionUrl=.*gradle-)9\\.1\\.0(-all\\.zip)
+              r'(?m)^(distributionUrl=.*gradle-)9\.1\.0(-all\.zip)$',
+              r'\g<1>9.3.1\g<2>',
+              w,
+          )
+          if count != 1:
+              raise SystemExit("Expected exactly one Gradle 9.1.0 wrapper URL")
+          wrapper.write_text(w)
+          print("Updated CI Gradle wrapper to 9.3.1 for Flutter 3.50.1")
+          PY
 
       - name: Install Flutter dependencies
         working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
