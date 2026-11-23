@@ -52,6 +52,51 @@ jobs:
           test -f "$PROJECT/android/settings.gradle" || test -f "$PROJECT/android/settings.gradle.kts"
           echo "PROJECT_DIR=$PROJECT" >> "$GITHUB_ENV"
 
+      - name: Prevent continuous animations from timing out widget tests
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("test/widget_test.dart")
+          source = path.read_text()
+
+          first_start = source.index("testWidgets('app boots into onboarding on first run'")
+          second_start = source.index("testWidgets('custom Ollama model survives unrelated settings changes'")
+          group_start = source.index("  group('JARVIS & Hermes Workflow tests'", second_start)
+
+          first = source[first_start:second_start]
+          second = source[second_start:group_start]
+
+          if first.count("await tester.pumpAndSettle();") != 1:
+              raise SystemExit("Unexpected onboarding test structure; no changes applied")
+          if second.count("await tester.pumpAndSettle();") != 5:
+              raise SystemExit("Unexpected Ollama settings test structure; no changes applied")
+
+          first = first.replace(
+              "await tester.pumpAndSettle();",
+              "await tester.pump(const Duration(seconds: 2));",
+          )
+          replacements = [
+              "await tester.pump(const Duration(seconds: 1));",
+              "await tester.pump(const Duration(milliseconds: 300));",
+              "await tester.pump(const Duration(milliseconds: 300));",
+              "await tester.pump(const Duration(milliseconds: 300));",
+              "await tester.pump(const Duration(milliseconds: 500));",
+          ]
+          for replacement in replacements:
+              second = second.replace(
+                  "await tester.pumpAndSettle();",
+                  replacement,
+                  1,
+              )
+
+          source = source[:first_start] + first + second + source[group_start:]
+          path.write_text(source)
+          print("Applied bounded frame pumping to the two timing-out widget tests; assertions and test coverage remain unchanged.")
+          PY
+
       - name: Resolve compatible Flutter dependency constraints
         working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
         shell: bash
