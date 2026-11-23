@@ -66,9 +66,15 @@ jobs:
           # deterministic test-only handlers for the native channels touched
           # during app/settings initialisation.
           if "package:flutter/services.dart" not in source:
+              newline = chr(10)
+              imports = (
+                  "import 'dart:io';" + newline + newline
+                  + "import 'package:flutter/material.dart';" + newline
+                  + "import 'package:flutter/services.dart';"
+              )
               source = source.replace(
                   "import 'package:flutter/material.dart';",
-                  "import 'dart:io';\n\nimport 'package:flutter/material.dart';\nimport 'package:flutter/services.dart';",
+                  imports,
                   1,
               )
           if "setUpAll(() {" not in source:
