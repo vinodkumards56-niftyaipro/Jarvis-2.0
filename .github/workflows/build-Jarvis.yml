@@ -1,4 +1,3 @@
-
 name: JARVIS Android APK
 
 on:
@@ -6,7 +5,9 @@ on:
   push:
     branches:
       - main
+      - feature/phase3-litertlm-local-ai
     paths:
+      - 'JARVIS-Phase3-LiteRTLM-corrected-review.zip'
       - 'JARVIS-security-hardened-working-copy.zip'
       - '.github/workflows/build-Jarvis.yml'
 
@@ -34,29 +35,36 @@ jobs:
           channel: stable
           cache: true
 
-      
-      - name: Extract source
+      - name: Extract selected source package
+        shell: bash
         run: |
-          unzip -q JARVIS-security-hardened-working-copy.zip -d source
-          PROJECT="source/Jarvis-master"
+          set -euo pipefail
+          if [ -f JARVIS-Phase3-LiteRTLM-corrected-review.zip ]; then
+            PACKAGE="JARVIS-Phase3-LiteRTLM-corrected-review.zip"
+            PROJECT="source"
+          else
+            PACKAGE="JARVIS-security-hardened-working-copy.zip"
+            PROJECT="source/Jarvis-master"
+          fi
+          echo "Selected package: $PACKAGE"
+          unzip -q "$PACKAGE" -d source
           test -f "$PROJECT/pubspec.yaml"
           test -f "$PROJECT/android/gradle/wrapper/gradle-wrapper.properties"
-          find "$PROJECT/android" -maxdepth 1 -name 'settings.gradle*' -print
           test -f "$PROJECT/android/settings.gradle" || test -f "$PROJECT/android/settings.gradle.kts"
+          echo "PROJECT_DIR=$PROJECT" >> "$GITHUB_ENV"
 
       - name: Upgrade Android build versions
-        working-directory: source/Jarvis-master
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
 
-          # Update Gradle wrapper
           wrapper = Path("android/gradle/wrapper/gradle-wrapper.properties")
           content = wrapper.read_text()
           content, count = re.subn(
-              r'gradle-[0-9.]+-(?:all|bin)\.zip',
+              r'gradle-[0-9.]+-(?:all|bin)\\.zip',
               'gradle-9.3.1-all.zip',
               content
           )
@@ -64,7 +72,6 @@ jobs:
               raise SystemExit("Gradle wrapper URL not found")
           wrapper.write_text(content)
 
-          # Detect either Groovy or Kotlin settings file
           candidates = [
               Path("android/settings.gradle.kts"),
               Path("android/settings.gradle")
@@ -74,33 +81,36 @@ jobs:
               raise SystemExit("Android settings.gradle file not found")
 
           content = settings.read_text()
-          pattern = r'(id\s*\(?\s*["\']com\.android\.application["\']\s*\)?\s+version\s+["\'])[^"\']+'
-          content, count = re.subn(pattern, r'\g<1>9.1.1', content)
-
+          pattern = r'(id\\s*\\(?\\s*["\\']com\\.android\\.application["\\']\\s+version\\s+["\\'])[^"\\']+'
+          content, count = re.subn(pattern, r'\\g<1>9.1.1', content)
           if count == 0:
-              raise SystemExit(
-                  f"Could not find Android Gradle Plugin version in {settings}"
-              )
-
+              raise SystemExit(f"Could not find Android Gradle Plugin version in {settings}")
           settings.write_text(content)
           print(f"Updated Android settings: {settings}")
-          print("Gradle wrapper and Android Gradle Plugin updated.")
           PY
-          
+
       - name: Install Flutter dependencies
-        working-directory: source/Jarvis-master
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
         run: flutter pub get
 
       - name: Check Flutter project
-        working-directory: source/Jarvis-master
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
         run: flutter doctor -v
 
+      - name: Analyze Flutter project
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        run: flutter analyze
+
+      - name: Run Flutter tests
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        run: flutter test
+
       - name: Build release APK
-        working-directory: source/Jarvis-master
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
         run: flutter build apk --release --verbose
 
       - name: Verify APK
-        working-directory: source/Jarvis-master
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
         run: |
           APK="build/app/outputs/flutter-apk/app-release.apk"
           test -f "$APK"
@@ -111,7 +121,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: JARVIS-Android-APK
-          path: source/Jarvis-master/build/app/outputs/flutter-apk/app-release.apk
+          path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
 
       - name: Upload build diagnostics
@@ -120,7 +130,7 @@ jobs:
         with:
           name: JARVIS-Build-Diagnostics
           path: |
-            source/Jarvis-master/build/
-            source/Jarvis-master/android/
+            ${{ env.PROJECT_DIR }}/build/
+            ${{ env.PROJECT_DIR }}/android/
           retention-days: 7
           if-no-files-found: ignore
