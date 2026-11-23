@@ -109,7 +109,7 @@ jobs:
           });
 
           """
-              source = source.replace("void main() {\\n", "void main() {\\n" + setup, 1)
+              source = source.replace("void main() {" + chr(10), "void main() {" + chr(10) + setup, 1)
 
           first_start = source.index("testWidgets('app boots into onboarding on first run'")
           second_start = source.index("testWidgets('custom Ollama model survives unrelated settings changes'")
