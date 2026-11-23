@@ -182,7 +182,7 @@ jobs:
           PY
 
       - name: Resolve compatible Flutter dependency constraints
-        working-directory: \${{ github.workspace }}/\${{ env.PROJECT_DIR }}
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           python3 - <<'PY'
