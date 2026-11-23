@@ -62,6 +62,49 @@ jobs:
           path = Path("test/widget_test.dart")
           source = path.read_text()
 
+          # Widget tests run without Android/iOS plugin registrants. Register
+          # deterministic test-only handlers for the native channels touched
+          # during app/settings initialisation.
+          if "package:flutter/services.dart" not in source:
+              source = source.replace(
+                  "import 'package:flutter/material.dart';",
+                  "import 'dart:io';\\n\\nimport 'package:flutter/material.dart';\\nimport 'package:flutter/services.dart';",
+                  1,
+              )
+          if "setUpAll(() {" not in source:
+              setup = """  setUpAll(() {
+            const secureStorage = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+                .setMockMethodCallHandler(secureStorage, (call) async {
+              switch (call.method) {
+                case 'read':
+                  return null;
+                case 'readAll':
+                  return <String, String>{};
+                case 'containsKey':
+                  return false;
+                default:
+                  return null;
+              }
+            });
+
+            const pathProvider = MethodChannel('plugins.flutter.io/path_provider');
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+                .setMockMethodCallHandler(pathProvider, (call) async {
+              return Directory.systemTemp.path;
+            });
+
+            const accessibility = MethodChannel('com.privateagent/accessibility');
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+                .setMockMethodCallHandler(accessibility, (call) async {
+              if (call.method == 'startMacroRecording') return false;
+              return null;
+            });
+          });
+
+          """
+              source = source.replace("void main() {\\n", "void main() {\\n" + setup, 1)
+
           first_start = source.index("testWidgets('app boots into onboarding on first run'")
           second_start = source.index("testWidgets('custom Ollama model survives unrelated settings changes'")
           group_start = source.index("  group('JARVIS & Hermes Workflow tests'", second_start)
