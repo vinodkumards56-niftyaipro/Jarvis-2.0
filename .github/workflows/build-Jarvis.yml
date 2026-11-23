@@ -18,7 +18,6 @@ jobs:
   build:
     name: Build JARVIS APK
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -54,7 +53,7 @@ jobs:
           echo "PROJECT_DIR=$PROJECT" >> "$GITHUB_ENV"
 
       - name: Resolve compatible Flutter dependency constraints
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        working-directory: \${{ github.workspace }}/\${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           python3 - <<'PY'
@@ -62,51 +61,7 @@ jobs:
           import re
           p = Path("pubspec.yaml")
           s = p.read_text()
-          s, count = re.subn(r'(?m)^(\\s*share_plus:\\s*)\\^13\\.3\\.0\\s*        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
-        run: flutter pub get
-
-      - name: Check Flutter project
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
-        run: flutter doctor -v
-
-      - name: Analyze Flutter project
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
-        run: flutter analyze
-
-      - name: Run Flutter tests
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
-        run: flutter test
-
-      - name: Build release APK
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
-        run: flutter build apk --release --verbose
-
-      - name: Verify APK
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
-        run: |
-          APK="build/app/outputs/flutter-apk/app-release.apk"
-          test -f "$APK"
-          ls -lh "$APK"
-
-      - name: Upload APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: JARVIS-Android-APK
-          path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 14
-
-      - name: Upload build diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: JARVIS-Build-Diagnostics
-          path: |
-            ${{ env.PROJECT_DIR }}/build/
-            ${{ env.PROJECT_DIR }}/android/
-          retention-days: 7
-          if-no-files-found: ignore
-, r'\\g<1>^12.0.2', s)
+          s, count = re.subn(r'(?m)^(\s*share_plus:\s*)\^13\.3\.0\s*$', r'\g<1>^12.0.2', s)
           if count != 1:
               raise SystemExit("Expected exactly one share_plus ^13.3.0 constraint")
           p.write_text(s)
@@ -114,27 +69,27 @@ jobs:
           PY
 
       - name: Install Flutter dependencies
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        working-directory: \${{ github.workspace }}/\${{ env.PROJECT_DIR }}
         run: flutter pub get
 
       - name: Check Flutter project
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        working-directory: \${{ github.workspace }}/\${{ env.PROJECT_DIR }}
         run: flutter doctor -v
 
       - name: Analyze Flutter project
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        working-directory: \${{ github.workspace }}/\${{ env.PROJECT_DIR }}
         run: flutter analyze
 
       - name: Run Flutter tests
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        working-directory: \${{ github.workspace }}/\${{ env.PROJECT_DIR }}
         run: flutter test
 
       - name: Build release APK
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        working-directory: \${{ github.workspace }}/\${{ env.PROJECT_DIR }}
         run: flutter build apk --release --verbose
 
       - name: Verify APK
-        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        working-directory: \${{ github.workspace }}/\${{ env.PROJECT_DIR }}
         run: |
           APK="build/app/outputs/flutter-apk/app-release.apk"
           test -f "$APK"
@@ -145,7 +100,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: JARVIS-Android-APK
-          path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
+          path: \${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
 
       - name: Upload build diagnostics
@@ -154,7 +109,7 @@ jobs:
         with:
           name: JARVIS-Build-Diagnostics
           path: |
-            ${{ env.PROJECT_DIR }}/build/
-            ${{ env.PROJECT_DIR }}/android/
+            \${{ env.PROJECT_DIR }}/build/
+            \${{ env.PROJECT_DIR }}/android/
           retention-days: 7
           if-no-files-found: ignore
