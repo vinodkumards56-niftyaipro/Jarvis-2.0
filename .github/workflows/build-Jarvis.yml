@@ -71,7 +71,7 @@ jobs:
 
           if first.count("await tester.pumpAndSettle();") != 1:
               raise SystemExit("Unexpected onboarding test structure; no changes applied")
-          if second.count("await tester.pumpAndSettle();") != 5:
+          if second.count("await tester.pumpAndSettle();") != 4:
               raise SystemExit("Unexpected Ollama settings test structure; no changes applied")
 
           first = first.replace(
