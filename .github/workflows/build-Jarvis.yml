@@ -145,12 +145,12 @@ jobs:
           # Fixed-duration pumps avoid infinite animations but do not scroll controls into view.
           second = second.replace(
               "await tester.tap(find.text('Send system prompt'));",
-              "await tester.ensureVisible(find.text('Send system prompt'));\\n  await tester.pump();\\n  await tester.tap(find.text('Send system prompt'));",
+              "await tester.ensureVisible(find.text('Send system prompt'));\n  await tester.pump();\n  await tester.tap(find.text('Send system prompt'));",
               1,
           )
           second = second.replace(
               "await tester.tap(find.text('Save changes'));",
-              "await tester.ensureVisible(find.text('Save changes'));\\n  await tester.pump();\\n  await tester.tap(find.text('Save changes'));",
+              "await tester.ensureVisible(find.text('Save changes'));\n  await tester.pump();\n  await tester.tap(find.text('Save changes'));",
               1,
           )
 
