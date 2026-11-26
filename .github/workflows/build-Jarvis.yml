@@ -4,8 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
-      - feature/phase3-litertlm-local-ai
+      - security/jarvis-phase3-hardening
     paths:
       - 'JARVIS-Phase3-LiteRTLM-corrected-review.zip'
       - 'JARVIS-security-hardened-working-copy.zip'
@@ -51,6 +50,24 @@ jobs:
           test -f "$PROJECT/android/gradle/wrapper/gradle-wrapper.properties"
           test -f "$PROJECT/android/settings.gradle" || test -f "$PROJECT/android/settings.gradle.kts"
           echo "PROJECT_DIR=$PROJECT" >> "$GITHUB_ENV"
+
+      - name: Restrict FileProvider to camera snapshots
+        working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("android/app/src/main/res/xml/file_paths.xml")
+          if not p.exists():
+              raise SystemExit("FileProvider paths XML not found")
+          p.write_text('''<?xml version="1.0" encoding="utf-8"?>
+          <paths>
+              <cache-path name="camera_snapshots" path="camera_snapshots/" />
+          </paths>
+          ''')
+          print("Restricted FileProvider to app-private camera_snapshots cache directory")
+          PY
 
       - name: Prevent continuous animations from timing out widget tests
         working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
@@ -253,14 +270,14 @@ jobs:
         working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
         run: flutter test
 
-      - name: Build release APK
+      - name: Build debug APK for installation testing
         working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
-        run: flutter build apk --release --verbose
+        run: flutter build apk --debug --verbose
 
       - name: Verify APK
         working-directory: ${{ github.workspace }}/${{ env.PROJECT_DIR }}
         run: |
-          APK="build/app/outputs/flutter-apk/app-release.apk"
+          APK="build/app/outputs/flutter-apk/app-debug.apk"
           test -f "$APK"
           ls -lh "$APK"
 
@@ -268,8 +285,8 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: JARVIS-Android-APK
-          path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
+          name: JARVIS-Android-Debug-APK
+          path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
 
       - name: Upload build diagnostics
